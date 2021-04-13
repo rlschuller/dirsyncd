@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e # exit with any error
+shopt -s nullglob
+
+function err_unset {
+    echo "error: $1 is empty or unset." 1>&2
+    exit 1
+}
+
+function err_lock {
+    echo "error: $( cat "$1" ) placed a lock in $1." 1>&2
+    exit 2
+}
+
+RSYNC_FLAGS=("-Rrpt")
+[ "$DIRSYNCD_REMOVE_SOURCE_FILES" = true ] && RSYNC_FLAGS+=("--remove-source-files")
+[ -z "$DIRSYNCD_REQ_DIR" ] && err_unset DIRSYNCD_REQ_DIR
+[ -z "$DIRSYNCD_ORIG_DIR" ] && err_unset DIRSYNCD_ORIG_DIR
+[ -z "$DIRSYNCD_DEST_DIR" ] && err_unset DIRSYNCD_DEST_DIR
+[ -z "$DIRSYNCD_SLEEP_TIME" ] && DIRSYNCD_SLEEP_TIME=600
+
+# lock mechanism
+LOCK_PATH="$DIRSYNCD_REQ_DIR"/lock
+[ -f "$LOCK_PATH" ] && err_lock "$LOCK_PATH"
+echo "$(whoami)@$(hostname)" > "$LOCK_PATH"
+
+while true; do
+    for REQ_PATH in "$DIRSYNCD_REQ_DIR"/request* ; do
+        REQ="$( head -n 1 "$REQ_PATH" )"
+        rsync "${RSYNC_FLAGS[@]}"  "$DIRSYNCD_ORIG_DIR/./$REQ" "$DIRSYNCD_DEST_DIR"
+        echo "$( date -uIs )" "$(whoami)@$(hostname)" "$REQ" >> "$DIRSYNCD_REQ_DIR"/log
+        rm "$REQ_PATH"
+    done
+
+    sleep "$DIRSYNCD_SLEEP_TIME"
+done
