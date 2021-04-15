@@ -19,13 +19,23 @@ function rm_lock {
     exit
 }
 
+[ -z "$DIRSYNCD_REMOVE_SOURCE_FILES" ] && DIRSYNCD_REMOVE_SOURCE_FILES=false
+echo "DIRSYNCD_REMOVE_SOURCE_FILES=$DIRSYNCD_REMOVE_SOURCE_FILES" >&2
+echo "DIRSYNCD_REQ_DIR=$DIRSYNCD_REQ_DIR"  >&2
+echo "DIRSYNCD_ORIG_DIR=$DIRSYNCD_ORIG_DIR" >&2
+echo "DIRSYNCD_DEST_DIR=$DIRSYNCD_DEST_DIR" >&2
+[ -z "$DIRSYNCD_SLEEP_TIME" ] && DIRSYNCD_SLEEP_TIME=600
+echo "DIRSYNCD_SLEEP_TIME=$DIRSYNCD_SLEEP_TIME" >&2
+echo >&2
+echo "To show progress from rsync, use the --progress flag" >&2
+echo >&2
+
 RSYNC_FLAGS=("-Rrpt")
 RSYNC_FLAGS+=("$@")
 [ "$DIRSYNCD_REMOVE_SOURCE_FILES" = true ] && RSYNC_FLAGS+=("--remove-source-files")
 [ -z "$DIRSYNCD_REQ_DIR" ] && err_unset DIRSYNCD_REQ_DIR
 [ -z "$DIRSYNCD_ORIG_DIR" ] && err_unset DIRSYNCD_ORIG_DIR
 [ -z "$DIRSYNCD_DEST_DIR" ] && err_unset DIRSYNCD_DEST_DIR
-[ -z "$DIRSYNCD_SLEEP_TIME" ] && DIRSYNCD_SLEEP_TIME=600
 
 # lock mechanism
 LOCK_PATH="$DIRSYNCD_REQ_DIR"/lock
